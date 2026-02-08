@@ -51,12 +51,15 @@ jobs:
         if: matrix.target == 'linux-android'
         uses: android-actions/setup-android@v3
         with:
-          packages: "platforms;android-34 build-tools;34.0.0 ndk;27.0.12077973"
+          # Добавляем cmake к списку пакетов
+          packages: "platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973 cmake;3.22.1"
 
-      # 2. Явное указание NDK (Fix для "NDK not configured")
-      - name: Export Android NDK Home
+      - name: Export Android NDK & CMake Home
         if: matrix.target == 'linux-android'
-        run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+        run: |
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+          # Явно указываем путь к cmake из SDK
+          echo "PATH=$ANDROID_HOME/cmake/3.22.1/bin:$PATH" >> $GITHUB_ENV
 
       # 3. SSH доступ к приватному ядру
       - name: Setup SSH for Core
