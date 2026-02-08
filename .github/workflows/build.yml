@@ -12,57 +12,86 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # 🐧 LINUX & 🤖 ANDROID
           - os: ubuntu-latest
             target: linux-android
+            # Строим и Linux, и APK
             cmd: |
               flutter build linux --release
               flutter build apk --release
+            # Пути к артефактам для Linux раннера
+            artifact_path: |
+              build/app/outputs/flutter-apk/app-release.apk
+              build/linux/x64/release/bundle/
+
+          # 🪟 WINDOWS
           - os: windows-latest
             target: windows
             cmd: flutter build windows --release
+            # Путь для Windows раннера
+            artifact_path: build/windows/x64/runner/Release/
+
+          # 🍏 MACOS & 📱 IOS
           - os: macos-latest
             target: macos-ios
+            # Строим macOS и iOS (без подписи)
             cmd: |
               flutter build macos --release
               flutter build ios --release --no-codesign
+            # Пути для Mac раннера
+            artifact_path: |
+              build/macos/Build/Products/Release/*.app
+              build/ios/iphoneos/Runner.app
 
     steps:
       - uses: actions/checkout@v4
 
+      # 1. Настройка Android SDK (Только для Linux раннера)
       - name: Setup Android SDK
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.target == 'linux-android'
         uses: android-actions/setup-android@v3
         with:
-          packages: "platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973"
+          packages: "platforms;android-34 build-tools;34.0.0 ndk;27.0.12077973"
 
+      # 2. Явное указание NDK (Fix для "NDK not configured")
+      - name: Export Android NDK Home
+        if: matrix.target == 'linux-android'
+        run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
+
+      # 3. SSH доступ к приватному ядру
       - name: Setup SSH for Core
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_CORE }}
 
+      # 4. Установка Flutter
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
+      # 5. Зависимости для Linux (Исправлено: добавлены jsoncpp и secret)
       - name: Install Linux Deps
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libjsoncpp-dev libsecret-1-dev
 
+      # 6. Зависимости для macOS (Исправлено: добавлен jsoncpp)
+      - name: Install macOS Deps
+        if: matrix.os == 'macos-latest'
+        run: brew install jsoncpp
+
+      # 7. Сборка
       - name: Pub Get
         run: flutter pub get
 
       - name: Build Artifacts
         run: ${{ matrix.cmd }}
 
+      # 8. Загрузка Артефактов (Исправлено: берет путь из matrix)
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nebula-build-${{ matrix.target }}
-          path: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/linux/x64/release/bundle/*
-            build/windows/x86_64/runner/Release/*
-            build/macos/Build/Products/Release/*.app
+          path: ${{ matrix.artifact_path }}
