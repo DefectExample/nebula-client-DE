@@ -1,0 +1,67 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Android
+*.apk
+*.ap_
+*.dex
+.gradle/
+local.properties
+*.keystore
+!debug.keystore
+captures/
+.externalNativeBuild/
+.cxx/
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# iOS
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+**/Pods/
+**/.symlinks/
+**/DerivedData/
+xcuserdata/
+profile
+*.hmap
+*.ipa
+.generated/
+
+# Linux
+/linux/flutter/ephemeral/
+
+# macOS
+/macos/Flutter/ephemeral/
+
+# Windows
+/windows/flutter/ephemeral/
+
+# Web
+/web/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
