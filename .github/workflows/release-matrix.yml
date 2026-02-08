@@ -84,6 +84,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973"
+      
       - name: Setup SSH for private core
         uses: webfactory/ssh-agent@v0.7.0
         with:

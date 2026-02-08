@@ -7,11 +7,11 @@ plugins {
 android {
     namespace = "com.nebula.nebula_client"
     
-    compileSdk = 34
-    buildToolsVersion = "34.0.0"
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
     
-    ndkVersion = System.getenv("ANDROID_NDK_HOME")?.split("/")?.lastOrNull() 
-        ?: "26.1.10909125"
+    ndkVersion = System.getenv("ANDROID_NDK_HOME")?.split("/")?.lastOrNull()
+        ?: "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -25,7 +25,7 @@ android {
     defaultConfig {
         applicationId = "com.nebula.nebula_client"
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
     }
