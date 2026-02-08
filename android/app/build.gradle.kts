@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.nebula.nebula_client"
-        minSdk = 21
+        minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
