@@ -157,7 +157,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "0a8370e41917213718fd20babb821f6a7b8bd7a1"
+      resolved-ref: "628382531feeeb3c07491b75f4bcde4ef3ac35e0"
       url: "git@github.com:kaabdulaal/nebula-core.git"
     source: git
     version: "0.0.1"
