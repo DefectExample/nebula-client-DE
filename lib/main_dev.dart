@@ -7,14 +7,14 @@ void main() {
   // Initialize Nebula API and print version
   final api = NebulaApi();
   final version = api.version();
-  print('🌌 Nebula Core Version: $version');
+  debugPrint('🌌 Nebula Core Version: $version');
   
   // Initialize the core
   final initResult = api.init();
   if (initResult == 0) {
-    print('✅ Nebula Core initialized successfully');
+    debugPrint('✅ Nebula Core initialized successfully');
   } else {
-    print('❌ Nebula Core initialization failed with code: $initResult');
+    debugPrint('❌ Nebula Core initialization failed with code: $initResult');
   }
 
   runApp(
