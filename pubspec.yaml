@@ -17,11 +17,6 @@ dependencies:
       url: git@github.com:kaabdulaal/nebula-core.git
       ref: feature/CORE-02-ffi-bridge
 
-dependency_overrides:
-  # Override for local development - Git will ignore this, CI/CD will use SSH URL above
-  nebula_core:
-    path: ../nebula_core
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
