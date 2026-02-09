@@ -165,7 +165,7 @@ packages:
     description:
       path: "."
       ref: "feature/CORE-02-ffi-bridge"
-      resolved-ref: "897796583e34ca9163b358bbfe1ebb2345bc061c"
+      resolved-ref: "6a70461bcae293bb17fa2db9cc52487c48158eec"
       url: "git@github.com:kaabdulaal/nebula-core.git"
     source: git
     version: "0.0.1"

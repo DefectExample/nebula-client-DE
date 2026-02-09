@@ -90,7 +90,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: |
           vcpkg install jsoncpp:x64-windows
-          echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          echo "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> $env:GITHUB_ENV
 
       # 8. Сборка
       - name: Pub Get
@@ -105,4 +105,3 @@ jobs:
         with:
           name: nebula-build-${{ matrix.target }}
           path: ${{ matrix.artifact_path }}
-          
