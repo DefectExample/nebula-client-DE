@@ -1,45 +1,26 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app/router.dart';
+import 'package:flutter/foundation.dart';
+import 'app_bootstrap.dart';
 import 'core/api/nebula_api.dart';
+import 'core/config/app_config.dart';
 
 void main() {
-  // Initialize Nebula API and print version
+  final config = AppConfig.dev();
+
+  // Initialize Nebula Core FFI
   final api = NebulaApi();
   final version = api.version();
-  debugPrint('🌌 Nebula Core Version: $version');
-  
-  // Initialize the core
   final initResult = api.init();
-  if (initResult == 0) {
-    debugPrint('✅ Nebula Core initialized successfully');
-  } else {
-    debugPrint('❌ Nebula Core initialization failed with code: $initResult');
+
+  if (config.enableLogging && kDebugMode) {
+    debugPrint('🚀 Nebula starting in ${config.flavor.name.toUpperCase()} mode');
+    debugPrint('   API: ${config.apiBaseUrl}');
+    debugPrint('🌌 Nebula Core Version: $version');
+    if (initResult == 0) {
+      debugPrint('✅ Nebula Core initialized successfully');
+    } else {
+      debugPrint('❌ Nebula Core initialization failed with code: $initResult');
+    }
   }
 
-  runApp(
-    const ProviderScope(
-      child: NebulaApp(),
-    ),
-  );
-}
-
-class NebulaApp extends StatelessWidget {
-  const NebulaApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Nebula Dev',
-      debugShowCheckedModeBanner: true, // Show debug banner in dev
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
-      routerConfig: router,
-    );
-  }
+  bootstrap(config);
 }
