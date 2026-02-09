@@ -7,11 +7,10 @@ plugins {
 android {
     namespace = "com.nebula.nebula_client"
     
-    compileSdk = 36
-    buildToolsVersion = "36.0.0"
+    compileSdk = 34
     
     ndkVersion = System.getenv("ANDROID_NDK_HOME")?.split("/")?.lastOrNull()
-        ?: "27.0.12077973"
+        ?: "26.1.10909125"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -25,7 +24,7 @@ android {
     defaultConfig {
         applicationId = "com.nebula.nebula_client"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
     }
