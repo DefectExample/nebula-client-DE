@@ -1,7 +1,7 @@
 name: Nebula Multi-Platform Build
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/CORE-02-ffi-bridge ]
   pull_request:
 
 jobs:
@@ -15,11 +15,9 @@ jobs:
           # 🐧 LINUX & 🤖 ANDROID
           - os: ubuntu-latest
             target: linux-android
-            # Строим и Linux, и APK
             cmd: |
               flutter build linux --release
               flutter build apk --release
-            # Пути к артефактам для Linux раннера
             artifact_path: |
               build/app/outputs/flutter-apk/app-release.apk
               build/linux/x64/release/bundle/
@@ -27,21 +25,20 @@ jobs:
           # 🪟 WINDOWS
           - os: windows-latest
             target: windows
-            cmd: flutter build windows --release
-            # Путь для Windows раннера
+            cmd: flutter build windows --release -v
+            # Исправлено: берем всё содержимое папки Release
             artifact_path: build/windows/x64/runner/Release/
 
           # 🍏 MACOS & 📱 IOS
           - os: macos-latest
             target: macos-ios
-            # Строим macOS и iOS (без подписи)
             cmd: |
               flutter build macos --release
               flutter build ios --release --no-codesign
-            # Пути для Mac раннера
+            # Исправлено: более точные пути для извлечения приложений
             artifact_path: |
               build/macos/Build/Products/Release/*.app
-              build/ios/iphoneos/Runner.app
+              build/ios/iphoneos/*.app
 
     steps:
       - uses: actions/checkout@v4
@@ -51,15 +48,18 @@ jobs:
         if: matrix.target == 'linux-android'
         uses: android-actions/setup-android@v3
         with:
-          # Добавляем cmake к списку пакетов
-          packages: "platforms;android-36 build-tools;36.0.0 ndk;27.0.12077973 cmake;3.22.1"
+          packages: "platforms;android-34 build-tools;35.0.0 ndk;26.1.10909125 cmake;3.22.1"
 
       - name: Export Android NDK & CMake Home
         if: matrix.target == 'linux-android'
         run: |
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> $GITHUB_ENV
-          # Явно указываем путь к cmake из SDK
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125" >> $GITHUB_ENV
           echo "PATH=$ANDROID_HOME/cmake/3.22.1/bin:$PATH" >> $GITHUB_ENV
+
+      # 2. Настройка Xcode (Для стабильной сборки C++)
+      - name: Setup Xcode
+        if: matrix.os == 'macos-latest'
+        run: sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 
       # 3. SSH доступ к приватному ядру
       - name: Setup SSH for Core
@@ -73,26 +73,33 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # 5. Зависимости для Linux (Исправлено: добавлены jsoncpp и secret)
+      # 5. Зависимости для Linux
       - name: Install Linux Deps
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libjsoncpp-dev libsecret-1-dev
 
-      # 6. Зависимости для macOS (Исправлено: добавлен jsoncpp)
+      # 6. Зависимости для macOS
       - name: Install macOS Deps
         if: matrix.os == 'macos-latest'
         run: brew install jsoncpp
 
-      # 7. Сборка
+      # 7. Зависимости для Windows (Исправление ошибки LNK1181)
+      - name: Install Windows Deps
+        if: matrix.os == 'windows-latest'
+        run: |
+          vcpkg install jsoncpp:x64-windows
+          echo "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> $env:GITHUB_ENV
+
+      # 8. Сборка
       - name: Pub Get
         run: flutter pub get
 
       - name: Build Artifacts
         run: ${{ matrix.cmd }}
 
-      # 8. Загрузка Артефактов (Исправлено: берет путь из matrix)
+      # 9. Загрузка Артефактов
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
