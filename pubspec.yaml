@@ -13,7 +13,7 @@ dependencies:
   go_router: ^14.0.0
   nebula_core:
     # For local development:
-    # path: ../nebula_core
+    #path: ../nebula_core
     
     # For production:
     git:
