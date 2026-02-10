@@ -12,51 +12,7 @@ cmake_policy(VERSION 3.14...3.25)
 
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if(IS_MULTICONFIG)Task: Solve MSB3073 once and for all by decoupling CMake Install from the MSBuild lifecycle.
-
-The Problem: Even with set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD OFF), the INSTALL target is failing in GitHub Actions. This is due to file(REMOVE_RECURSE) commands and permission conflicts during the final file-copying phase.
-
-Instructions:
-
-    In nebula_client/windows/CMakeLists.txt:
-
-        Find the === Installation === section.
-
-        Replace the entire installation logic from set(BUILD_BUNDLE_DIR ...) to the end of the file with the following "CI-Safe" version:
-    CMake
-
-    # === CI-Safe Installation ===
-    # Disable automatic install to prevent MSB3073 in GitHub Actions
-    set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD OFF)
-
-    set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
-    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-      set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
-    endif()
-
-    # We only keep essential INSTALL commands. 
-    # REMOVED: file(REMOVE_RECURSE ...) as it causes locks in CI.
-    install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
-    install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}/data" COMPONENT Runtime)
-    install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
-
-    if(PLUGIN_BUNDLED_LIBRARIES)
-      install(FILES "${PLUGIN_BUNDLED_LIBRARIES}" DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
-    endif()
-
-    # Simplified Assets Copy
-    install(DIRECTORY "${PROJECT_BUILD_DIR}/flutter_assets" DESTINATION "${CMAKE_INSTALL_PREFIX}/data" COMPONENT Runtime)
-
-    # Release AOT
-    install(FILES "${AOT_LIBRARY}" DESTINATION "${CMAKE_INSTALL_PREFIX}/data" CONFIGURATIONS Profile;Release COMPONENT Runtime)
-
-    In nebula_client/.github/workflows/build.yml:
-
-        Let's change the Windows build command to ensure it doesn't try to trigger the install target unnecessarily:
-
-        Change flutter build windows --release to flutter build windows --release -v. (The verbose flag helps us see if it's a specific file lock).
-
-Execution: Apply these changes, run flutter pub upgrade nebula_core, and push.
+if(IS_MULTICONFIG)
   set(CMAKE_CONFIGURATION_TYPES "Debug;Profile;Release"
     CACHE STRING "" FORCE)
 else()
@@ -104,26 +60,18 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../nebula_core/include")
 
 
 # === CI-Safe Installation ===
-# Disable automatic install to prevent MSB3073 in GitHub Actions
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD OFF)
-
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
 endif()
-
-# We only keep essential INSTALL commands.
-# REMOVED: file(REMOVE_RECURSE ...) as it causes locks in CI.
+set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
+set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
-install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${CMAKE_INSTALL_PREFIX}/data" COMPONENT Runtime)
-install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
-
+install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+install(FILES "${FLUTTER_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
 if(PLUGIN_BUNDLED_LIBRARIES)
-  install(FILES "${PLUGIN_BUNDLED_LIBRARIES}" DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+  install(FILES "${PLUGIN_BUNDLED_LIBRARIES}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}" COMPONENT Runtime)
 endif()
-
-# Simplified Assets Copy
-install(DIRECTORY "${PROJECT_BUILD_DIR}/flutter_assets" DESTINATION "${CMAKE_INSTALL_PREFIX}/data" COMPONENT Runtime)
-
-# Release AOT
-install(FILES "${AOT_LIBRARY}" DESTINATION "${CMAKE_INSTALL_PREFIX}/data" CONFIGURATIONS Profile;Release COMPONENT Runtime)
+install(DIRECTORY "${PROJECT_BUILD_DIR}/flutter_assets" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" CONFIGURATIONS Profile;Release COMPONENT Runtime)
