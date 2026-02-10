@@ -56,6 +56,7 @@ add_subdirectory("runner")
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../nebula_core/include")
 
 
 # === Installation ===
@@ -64,7 +65,7 @@ include(flutter/generated_plugins.cmake)
 # so that building and running from within Visual Studio will work.
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
-set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
+# set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
 endif()
