@@ -25,7 +25,7 @@ jobs:
           # 🪟 WINDOWS
           - os: windows-latest
             target: windows
-            cmd: flutter build windows --release
+            cmd: flutter build windows --release -v
             # Исправлено: берем всё содержимое папки Release
             artifact_path: build/windows/x64/runner/Release/
 
