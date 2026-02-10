@@ -9,16 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  ffi: ^2.1.3
   flutter_riverpod: ^2.5.1
   go_router: ^14.0.0
   nebula_core:
-    # For local development:
-    # path: ../nebula_core
-    
-    # For production:
     git:
       url: git@github.com:kaabdulaal/nebula-core.git
-      ref: main
+      ref: feature/CORE-02-ffi-bridge
 
 dev_dependencies:
   flutter_test:
