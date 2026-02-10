@@ -65,7 +65,8 @@ include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../nebula_core/include")
 # so that building and running from within Visual Studio will work.
 set(BUILD_BUNDLE_DIR "$<TARGET_FILE_DIR:${BINARY_NAME}>")
 # Make the "install" step default, as it's required to run.
-# set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD 1)
+# Disable auto-install to prevent MSB3073 in CI environments
+set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD OFF)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${BUILD_BUNDLE_DIR}" CACHE PATH "..." FORCE)
 endif()
@@ -97,9 +98,11 @@ install(DIRECTORY "${NATIVE_ASSETS_DIR}"
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.
 set(FLUTTER_ASSET_DIR_NAME "flutter_assets")
-install(CODE "
-  file(REMOVE_RECURSE \"${INSTALL_BUNDLE_DATA_DIR}/${FLUTTER_ASSET_DIR_NAME}\")
-  " COMPONENT Runtime)
+# Note: REMOVE_RECURSE command commented out to prevent MSB3073 file locking issues
+# Flutter handles asset cleanup natively during build
+# install(CODE "
+#   file(REMOVE_RECURSE \"${INSTALL_BUNDLE_DATA_DIR}/${FLUTTER_ASSET_DIR_NAME}\")
+#   " COMPONENT Runtime)
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
