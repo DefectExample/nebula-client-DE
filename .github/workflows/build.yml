@@ -42,6 +42,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # 1. Настройка Android SDK (Только для Linux раннера)
       - name: Setup Android SDK
