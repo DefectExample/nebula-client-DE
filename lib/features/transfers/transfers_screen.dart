@@ -27,12 +27,14 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.cloud_upload, size: 80, color: Color(0xFF6366F1)),
+              const Icon(Icons.cloud_upload,
+                  size: 80, color: Color(0xFF6366F1)),
               const SizedBox(height: 24),
               if (_uploading) ...[
                 Text(
                   '${(_progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 48, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(value: _progress),
@@ -59,11 +61,11 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
 
   Future<void> _startUpload() async {
     setState(() => _uploading = true);
-    
+
     await for (final progress in _core.uploadFile('/mock/file.bin')) {
       setState(() => _progress = progress);
     }
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Upload complete!')),
