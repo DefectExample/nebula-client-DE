@@ -67,39 +67,45 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_CORE }}
 
-      # 4. Установка Flutter
+      # 4. Bootstrap vcpkg
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: 'nebula_core/vcpkg.json'
+
+      # 5. Установка Flutter
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
           cache: true
 
-      # 5. Зависимости для Linux
+      # 6. Зависимости для Linux
       - name: Install Linux Deps
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libjsoncpp-dev libsecret-1-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev nasm
 
-      # 6. Зависимости для macOS
+      # 7. Зависимости для macOS
       - name: Install macOS Deps
         if: matrix.os == 'macos-latest'
-        run: brew install jsoncpp
+        run: |
+          brew install nasm
 
-      # 7. Зависимости для Windows (Исправление ошибки LNK1181)
+      # 8. Зависимости для Windows
       - name: Install Windows Deps
         if: matrix.os == 'windows-latest'
         run: |
-          vcpkg install jsoncpp:x64-windows
-          echo "CMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> $env:GITHUB_ENV
+          choco install nasm strawberryperl -y
 
-      # 8. Сборка
+      # 9. Сборка
       - name: Pub Get
         run: flutter pub get
 
       - name: Build Artifacts
         run: ${{ matrix.cmd }}
 
-      # 9. Загрузка Артефактов
+      # 10. Загрузка Артефактов
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
