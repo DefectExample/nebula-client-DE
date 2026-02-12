@@ -459,9 +459,11 @@ packages:
   nebula_core:
     dependency: "direct main"
     description:
-      path: "../nebula_core"
-      relative: true
-    source: path
+      path: "."
+      ref: main
+      resolved-ref: de32a0e3d67cf44d1fa4786e5b3c2602fc63a82f
+      url: "git@github.com:kaabdulaal/nebula-core.git"
+    source: git
     version: "0.0.1"
   package_config:
     dependency: transitive
