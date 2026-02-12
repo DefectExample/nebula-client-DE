@@ -1,7 +1,7 @@
 name: Nebula Multi-Platform Build
 on:
   push:
-    branches: [ main ]
+    branches: [ feature/CLI-06-fixed ]
   workflow_dispatch: {}
 
 jobs:
