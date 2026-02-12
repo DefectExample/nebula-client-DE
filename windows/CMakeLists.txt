@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
+
+if(DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endif()
+
 project(nebula_client LANGUAGES CXX)
 
 set(BINARY_NAME "nebula_client")

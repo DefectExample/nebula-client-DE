@@ -45,6 +45,15 @@ jobs:
         with:
           submodules: recursive
 
+      # 0. Setup vcpkg
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: '**/vcpkg.json'
+      
+      - name: Export VCPKG_ROOT
+        run: echo "VCPKG_ROOT=${{ steps.run-vcpkg.outputs.RUNVCPKG_VCPKG_ROOT }}" >> $GITHUB_ENV
+
       # 1. Настройка Android SDK (Только для Linux раннера)
       - name: Setup Android SDK
         if: matrix.target == 'linux-android'
