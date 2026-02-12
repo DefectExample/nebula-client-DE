@@ -33,6 +33,7 @@ jobs:
           - os: macos-latest
             target: macos-ios
             cmd: |
+              "$VCPKG_ROOT/vcpkg" install --triplet=x64-osx
               flutter build macos --release
               "$VCPKG_ROOT/vcpkg" install --triplet=arm64-ios
               flutter build ios --release --no-codesign
@@ -116,7 +117,7 @@ jobs:
         run: |
           cd nebula_core
           if [ "${{ matrix.target }}" = "macos-ios" ]; then
-            "$VCPKG_ROOT/vcpkg" install
+            echo "macos-ios installs explicit triplets in matrix cmd."
           elif [ "${{ matrix.target }}" = "linux-android" ]; then
             "$VCPKG_ROOT/vcpkg" install --triplet=arm64-android
           else
