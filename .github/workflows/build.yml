@@ -114,15 +114,13 @@ jobs:
         run: |
           cd nebula_core
           if [ "${{ matrix.target }}" = "macos-ios" ]; then
-            "$VCPKG_ROOT/vcpkg" install \
-              openssl:x64-osx jsoncpp:x64-osx \
-              openssl:arm64-osx jsoncpp:arm64-osx \
-              openssl:arm64-ios jsoncpp:arm64-ios
+            "$VCPKG_ROOT/vcpkg" install --triplet=x64-osx
+            "$VCPKG_ROOT/vcpkg" install --triplet=arm64-osx
+            "$VCPKG_ROOT/vcpkg" install --triplet=arm64-ios
           elif [ "${{ matrix.target }}" = "linux-android" ]; then
-            "$VCPKG_ROOT/vcpkg" install \
-              openssl:arm64-android jsoncpp:arm64-android \
-              openssl:arm-neon-android jsoncpp:arm-neon-android \
-              openssl:x64-android jsoncpp:x64-android
+            "$VCPKG_ROOT/vcpkg" install --triplet=arm64-android
+            "$VCPKG_ROOT/vcpkg" install --triplet=arm-neon-android
+            "$VCPKG_ROOT/vcpkg" install --triplet=x64-android
           else
             "$VCPKG_ROOT/vcpkg" install
           fi
