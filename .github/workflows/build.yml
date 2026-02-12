@@ -33,7 +33,8 @@ jobs:
           - os: macos-latest
             target: macos-ios
             cmd: |
-              (cd ../nebula_core && "$VCPKG_ROOT/vcpkg" install --triplet=x64-osx)
+              MAC_TRIPLET=$([ "$(uname -m)" = "arm64" ] && echo "arm64-osx" || echo "x64-osx")
+              (cd ../nebula_core && "$VCPKG_ROOT/vcpkg" install --triplet="$MAC_TRIPLET")
               flutter build macos --release
               (cd ../nebula_core && "$VCPKG_ROOT/vcpkg" install --triplet=arm64-ios)
               flutter build ios --release --no-codesign
