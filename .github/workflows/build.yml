@@ -17,6 +17,8 @@ jobs:
             target: linux-android
             cmd: |
               flutter build linux --release
+              export VCPKG_DEFAULT_TRIPLET=arm64-android
+              export VCPKG_DEFAULT_HOST_TRIPLET=x64-linux
               (cd ../nebula_core && "$VCPKG_ROOT/vcpkg" install --triplet=arm64-android)
               flutter build apk --release --target-platform android-arm64
             artifact_path: |
