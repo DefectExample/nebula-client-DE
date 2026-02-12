@@ -4,6 +4,15 @@ if(DEFINED ENV{VCPKG_ROOT})
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 endif()
 
+# Since we are building from the client, we need to point vcpkg to the core's manifest
+if(NOT DEFINED VCPKG_MANIFEST_DIR)
+    get_filename_component(NEBULA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../nebula_core" ABSOLUTE)
+    if(EXISTS "${NEBULA_CORE_DIR}/vcpkg.json")
+        set(VCPKG_MANIFEST_DIR "${NEBULA_CORE_DIR}")
+        message(STATUS "Setting VCPKG_MANIFEST_DIR to ${VCPKG_MANIFEST_DIR}")
+    endif()
+endif()
+
 project(nebula_client LANGUAGES CXX)
 
 set(BINARY_NAME "nebula_client")
@@ -38,7 +47,7 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 include(flutter/generated_plugins.cmake)
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../nebula_core/include")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/../../nebula_core/include")
 
 # === CI-SAFE INSTALL ===
 set(CMAKE_VS_INCLUDE_INSTALL_TO_DEFAULT_BUILD OFF)
