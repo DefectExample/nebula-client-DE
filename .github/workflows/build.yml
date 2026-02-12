@@ -17,6 +17,7 @@ jobs:
             target: linux-android
             cmd: |
               flutter build linux --release
+              "$VCPKG_ROOT/vcpkg" install --triplet=arm64-android
               flutter build apk --release --target-platform android-arm64
             artifact_path: |
               nebula_client/build/app/outputs/flutter-apk/app-release.apk
