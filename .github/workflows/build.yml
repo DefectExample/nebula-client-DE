@@ -113,7 +113,13 @@ jobs:
         shell: bash
         run: |
           cd nebula_core
-          "$VCPKG_ROOT/vcpkg" install
+          if [ "${{ matrix.target }}" = "macos-ios" ]; then
+            "$VCPKG_ROOT/vcpkg" install --triplet=x64-osx --triplet=arm64-osx --triplet=arm64-ios
+          elif [ "${{ matrix.target }}" = "linux-android" ]; then
+            "$VCPKG_ROOT/vcpkg" install --triplet=arm64-android --triplet=arm-neon-android --triplet=x64-android
+          else
+            "$VCPKG_ROOT/vcpkg" install
+          fi
 
       - name: Run vcpkg (Windows)
         if: runner.os == 'Windows'
