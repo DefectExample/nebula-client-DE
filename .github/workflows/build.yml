@@ -1,7 +1,7 @@
 name: Nebula Multi-Platform Build
 on:
   push:
-    branches: [ main, feature/CORE-02-ffi-bridge ]
+    branches: [ main ]
   pull_request:
 
 jobs:
@@ -68,12 +68,6 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY_CORE }}
-
-      # 4. Bootstrap vcpkg
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgJsonGlob: 'nebula_core/vcpkg.json'
 
       # 5. Установка Flutter
       - uses: subosito/flutter-action@v2
