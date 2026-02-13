@@ -1,5 +1,55 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
+
+# Since we are building from the client, we need to point vcpkg to the core's manifest
+if(NOT DEFINED VCPKG_MANIFEST_DIR)
+    get_filename_component(NEBULA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../nebula_core" ABSOLUTE)
+    if(EXISTS "${NEBULA_CORE_DIR}/vcpkg.json")
+        set(VCPKG_MANIFEST_DIR "${NEBULA_CORE_DIR}")
+        message(STATUS "Setting VCPKG_MANIFEST_DIR to ${VCPKG_MANIFEST_DIR}")
+    endif()
+endif()
+
+# Setup vcpkg toolchain
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    if(DEFINED ENV{VCPKG_ROOT})
+        set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+    elseif(DEFINED NEBULA_CORE_DIR AND EXISTS "${NEBULA_CORE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
+        set(CMAKE_TOOLCHAIN_FILE "${NEBULA_CORE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    endif()
+endif()
+
+if(DEFINED CMAKE_TOOLCHAIN_FILE)
+    message(STATUS "Using vcpkg toolchain: ${CMAKE_TOOLCHAIN_FILE}")
+else()
+    message(WARNING "Vcpkg toolchain not found. Build may fail if dependencies are missing.")
+endif()
+
+# Fix for NixOS: Bypass pkg-config wrapper to allow vcpkg to work
+if(DEFINED ENV{IN_NIX_SHELL})
+    find_program(PKG_CONFIG_EXECUTABLE pkg-config)
+    if(PKG_CONFIG_EXECUTABLE)
+        # Check if it's a shell script (wrapper)
+        file(READ "${PKG_CONFIG_EXECUTABLE}" PKG_CONFIG_CONTENT LIMIT 20)
+        if(PKG_CONFIG_CONTENT MATCHES "^#!")
+            # It's a script, try to extract the real binary path
+            # We assume the wrapper execs the real binary
+            execute_process(
+                COMMAND grep -o "/nix/store/.*pkg-config.*/bin/pkg-config" "${PKG_CONFIG_EXECUTABLE}"
+                COMMAND head -n1
+                OUTPUT_VARIABLE REAL_PKG_CONFIG
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            if(REAL_PKG_CONFIG)
+                set(ENV{PKG_CONFIG} "${REAL_PKG_CONFIG}")
+                message(STATUS "NixOS detected: Setting PKG_CONFIG to unwrapped binary: ${REAL_PKG_CONFIG}")
+            else()
+                message(WARNING "NixOS detected: Could not find unwrapped pkg-config in wrapper.")
+            endif()
+        endif()
+    endif()
+endif()
+
 project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

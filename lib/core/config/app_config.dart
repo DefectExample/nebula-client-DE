@@ -5,7 +5,7 @@ enum AppFlavor {
 }
 
 /// Configuration for the Nebula application
-/// 
+///
 /// This class holds environment-specific settings that vary between
 /// development and production builds.
 class AppConfig {

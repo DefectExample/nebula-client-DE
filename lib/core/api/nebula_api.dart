@@ -41,7 +41,8 @@ class NebulaApi {
     } else if (Platform.isIOS) {
       return ffi.DynamicLibrary.process();
     }
-    throw UnsupportedError('Platform ${Platform.operatingSystem} not supported');
+    throw UnsupportedError(
+        'Platform ${Platform.operatingSystem} not supported');
   }
 
   /// Initialize Nebula Core
@@ -203,6 +204,41 @@ class NebulaApi {
       calloc.free(outputPtr);
       calloc.free(ivPtr);
       calloc.free(keyPtr);
+    }
+  }
+
+  /// Derive master key using Argon2id
+  ///
+  /// [password] User password
+  /// [salt] 16-byte salt
+  /// [iterations] Argon2 iterations
+  /// [memoryKb] Argon2 memory in KB
+  /// [parallelism] Argon2 parallelism factor
+  /// [outputKey] Pre-allocated 32-byte buffer for the result
+  ///
+  /// Returns 0 on success, error code otherwise.
+  int deriveMasterKey(
+    String password,
+    ffi.Pointer<ffi.Uint8> salt,
+    int saltLen,
+    int iterations,
+    int memoryKb,
+    int parallelism,
+    ffi.Pointer<ffi.Uint8> outputKey,
+  ) {
+    final passwordPtr = password.toNativeUtf8();
+    try {
+      return _bindings.nebula_derive_master_key(
+        passwordPtr.cast<ffi.Char>(),
+        salt,
+        saltLen,
+        iterations,
+        memoryKb,
+        parallelism,
+        outputKey,
+      );
+    } finally {
+      calloc.free(passwordPtr);
     }
   }
 }
