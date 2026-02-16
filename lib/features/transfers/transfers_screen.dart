@@ -10,7 +10,6 @@ class TransfersScreen extends ConsumerStatefulWidget {
 }
 
 class _TransfersScreenState extends ConsumerState<TransfersScreen> {
-  // Use the singleton instance
   final _core = NebulaCore();
   double _progress = 0.0;
   bool _uploading = false;
@@ -28,12 +27,14 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.cloud_upload, size: 80, color: Color(0xFF6366F1)),
+              const Icon(Icons.cloud_upload,
+                  size: 80, color: Color(0xFF6366F1)),
               const SizedBox(height: 24),
               if (_uploading) ...[
                 Text(
                   '${(_progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 48, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(value: _progress),
