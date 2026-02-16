@@ -156,6 +156,19 @@ foreach(bundled_library ${PLUGIN_BUNDLED_LIBRARIES})
     COMPONENT Runtime)
 endforeach(bundled_library)
 
+# Import nebula_core from stable location
+set(NEBULA_STABLE_LIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../nebula_core/linux/libnebula_core.so")
+
+if(EXISTS "${NEBULA_STABLE_LIB_PATH}")
+  install(FILES "${NEBULA_STABLE_LIB_PATH}"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+  message(STATUS "Loaded nebula_core from stable path: ${NEBULA_STABLE_LIB_PATH}")
+else()
+  message(WARNING "nebula_core library not found at: ${NEBULA_STABLE_LIB_PATH}")
+  message(WARNING "Building the core is required before building the client.")
+endif()
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/linux/")
 if(EXISTS "${NATIVE_ASSETS_DIR}")

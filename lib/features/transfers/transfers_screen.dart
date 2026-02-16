@@ -61,14 +61,10 @@ class _TransfersScreenState extends ConsumerState<TransfersScreen> {
 
   Future<void> _startUpload() async {
     setState(() => _uploading = true);
-
-    await for (final progress in _core.uploadFile('/mock/file.bin')) {
-      setState(() => _progress = progress);
-    }
-
+    
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload complete!')),
+       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Upload feature pending real implementation')),
       );
       setState(() {
         _uploading = false;

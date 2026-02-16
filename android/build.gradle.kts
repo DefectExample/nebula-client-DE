@@ -5,6 +5,23 @@ allprojects {
     }
 }
 
+// Force NDK version on plugins to match project version
+subprojects {
+    afterEvaluate {
+        if (extensions.findByName("android") != null) {
+            val androidExt = extensions.getByName("android")
+            if (androidExt is com.android.build.gradle.BaseExtension) {
+                androidExt.ndkVersion = "26.1.10909125"
+                if (androidExt.compileSdkVersion == "android-33" ||
+                    androidExt.compileSdkVersion == "android-27" || // in case some use older
+                    (androidExt.compileSdkVersion?.contains("android-36") == true)) {
+                    androidExt.compileSdkVersion = "android-34"
+                }
+            }
+        }
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

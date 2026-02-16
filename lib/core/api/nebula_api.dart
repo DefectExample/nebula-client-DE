@@ -1,43 +1,93 @@
 import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:ffi/ffi.dart';
 import 'package:nebula_core/nebula_core_bindings_generated.dart';
 
-/// High-level Dart wrapper for Nebula Core FFI
-///
-/// Implements "Caller Allocates, Caller Frees" memory safety pattern.
-/// All native memory allocations are managed by this class and properly freed.
-class NebulaApi {
-  late final NebulaCoreBindings _bindings;
-  late final ffi.DynamicLibrary _dylib;
+class _NebulaLogger {
+  static void d(String message) {
+    if (kDebugMode) {
+      print('[NEBULA] $message');
+    }
+  }
+}
 
-  NebulaApi() {
+Future<Directory> getNebulaDocumentsDirectory() async {
+  if (Platform.isLinux) {
+    try {
+      return await getApplicationDocumentsDirectory();
+    } catch (e) {
+      _NebulaLogger.d('path_provider failed, using XDG fallback: $e');
+      final home = Platform.environment['HOME'] ?? '.';
+      final dataHome = Platform.environment['XDG_DATA_HOME'] ?? p.join(home, '.local', 'share');
+      final nebulaDir = Directory(p.join(dataHome, 'nebula_vault'));
+      
+      if (!await nebulaDir.exists()) {
+        await nebulaDir.create(recursive: true);
+      }
+      
+      return nebulaDir;
+    }
+  } else {
+    return await getApplicationDocumentsDirectory();
+  }
+}
+
+class NebulaError implements Exception {
+  final int code;
+  final String message;
+
+  NebulaError(this.code, this.message);
+
+  @override
+  String toString() => 'NebulaError(code: $code, message: $message)';
+}
+
+class NebulaApi {
+  static final NebulaApi _instance = NebulaApi._internal();
+  
+  factory NebulaApi() => _instance;
+
+  NebulaApi._internal() {
     _dylib = _loadLibrary();
     _bindings = NebulaCoreBindings(_dylib);
   }
 
-  /// Load the native library based on platform
+  static NebulaApi get instance => _instance;
+
+  late final NebulaCoreBindings _bindings;
+  late final ffi.DynamicLibrary _dylib;
+  bool _isInitialized = false;
+
+  bool get isInitialized => _isInitialized;
+
   ffi.DynamicLibrary _loadLibrary() {
+    const libName = 'libnebula_core';
+    
     if (Platform.isAndroid) {
-      return ffi.DynamicLibrary.open('libnebula_core.so');
-    } else if (Platform.isLinux) {
-      // Try multiple paths for Linux (Flutter may put in lib or lib64)
       try {
         return ffi.DynamicLibrary.open('libnebula_core.so');
       } catch (e) {
-        // Fallback: try executable's directory structure
+        return ffi.DynamicLibrary.open('libnebula_core.so');
+      }
+    } else if (Platform.isLinux) {
+      try {
+        return ffi.DynamicLibrary.open('$libName.so');
+      } catch (e) {
         final exePath = Platform.resolvedExecutable;
         final exeDir = exePath.substring(0, exePath.lastIndexOf('/'));
         try {
-          return ffi.DynamicLibrary.open('$exeDir/lib/libnebula_core.so');
+          return ffi.DynamicLibrary.open('$exeDir/lib/$libName.so');
         } catch (_) {
-          return ffi.DynamicLibrary.open('$exeDir/lib64/libnebula_core.so');
+          return ffi.DynamicLibrary.open('$exeDir/lib64/$libName.so');
         }
       }
     } else if (Platform.isWindows) {
       return ffi.DynamicLibrary.open('nebula_core.dll');
     } else if (Platform.isMacOS) {
-      return ffi.DynamicLibrary.open('libnebula_core.dylib');
+      return ffi.DynamicLibrary.open('$libName.dylib');
     } else if (Platform.isIOS) {
       return ffi.DynamicLibrary.process();
     }
@@ -45,107 +95,211 @@ class NebulaApi {
         'Platform ${Platform.operatingSystem} not supported');
   }
 
-  /// Initialize Nebula Core
-  ///
-  /// Returns 0 on success, error code otherwise.
-  int init() {
-    return _bindings.nebula_init();
+  Future<void> init(String dbPath, String password) async {
+    if (_isInitialized) return;
+
+    try {
+      final dir = Directory(File(dbPath).parent.path);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+    } catch (_) {}
+
+    await Future.delayed(Duration.zero);
+
+    final dbPathPtr = dbPath.toNativeUtf8();
+    final passwordPtr = password.toNativeUtf8();
+    
+    try {
+      final result = _bindings.nebula_init(
+        dbPathPtr.cast<ffi.Char>(),
+        passwordPtr.cast<ffi.Char>(),
+      );
+      
+      if (result != 0) {
+        throw NebulaError(result, 'Failed to initialize Nebula Core (Code: $result)');
+      }
+      
+      _isInitialized = true;
+    } catch (e) {
+      _NebulaLogger.d('FFI Exception: $e');
+      rethrow;
+    } finally {
+      calloc.free(dbPathPtr);
+      calloc.free(passwordPtr);
+    }
   }
 
-  /// Cleanup Nebula Core resources
+  Future<int> recoverVault(String mnemonic, String newPassword) async {
+    if (_isInitialized) {
+      cleanup();
+    }
+
+    final docsDir = await getNebulaDocumentsDirectory();
+    final dbPath = p.join(docsDir.path, 'nebula.db');
+
+    final dbPathPtr = dbPath.toNativeUtf8();
+    final mnemonicPtr = mnemonic.toNativeUtf8();
+    final passwordPtr = newPassword.toNativeUtf8();
+
+    try {
+      final result = _bindings.nebula_recover_vault(
+        dbPathPtr.cast<ffi.Char>(),
+        mnemonicPtr.cast<ffi.Char>(),
+        passwordPtr.cast<ffi.Char>(),
+      );
+
+      if (result != 0) {
+        throw NebulaError(result, 'Failed to recover vault (Code: $result)');
+      }
+
+      _isInitialized = true;
+      return result;
+    } finally {
+      calloc.free(dbPathPtr);
+      calloc.free(mnemonicPtr);
+      calloc.free(passwordPtr);
+    }
+  }
+
+  void _ensureInitialized() {
+    if (!_isInitialized) {
+      throw StateError('Core not initialized. Call NebulaApi().init() first.');
+    }
+  }
+
   void cleanup() {
-    _bindings.nebula_cleanup();
+    if (_isInitialized) {
+      _bindings.nebula_cleanup();
+      _isInitialized = false;
+    }
   }
 
-  /// Get Nebula Core version string
-  ///
-  /// Returns version in format "major.minor.patch"
   String version() {
     final versionPtr = _bindings.nebula_version();
     if (versionPtr == ffi.nullptr) {
       return 'unknown';
     }
-    // C string is static, no need to free
     return versionPtr.cast<Utf8>().toDartString();
   }
 
-  /// Send Telegram authentication code
-  ///
-  /// [phone] Phone number in international format (e.g., "+1234567890")
-  /// Returns 0 on success, error code otherwise.
   int sendTelegramCode(String phone) {
-    // Caller allocates
+    _ensureInitialized();
+    
     final phonePtr = phone.toNativeUtf8();
     try {
       return _bindings.telegram_send_code(phonePtr.cast<ffi.Char>());
     } finally {
-      // Caller frees
       calloc.free(phonePtr);
     }
   }
 
-  /// Verify Telegram authentication code
-  ///
-  /// [code] Authentication code received via SMS/Telegram
-  /// Returns 0 on success, error code otherwise.
   int checkTelegramCode(String code) {
-    // Caller allocates
+    _ensureInitialized();
+    
     final codePtr = code.toNativeUtf8();
     try {
       return _bindings.telegram_check_code(codePtr.cast<ffi.Char>());
     } finally {
-      // Caller frees
       calloc.free(codePtr);
     }
   }
 
-  /// Encrypt data chunk with AES-256-GCM
-  ///
-  /// [input] Plaintext data bytes
-  /// [key] Base64-encoded encryption key
-  /// [iv] Initialization vector (12 bytes for GCM)
-  ///
-  /// Returns encrypted data with authentication tag, or null on error.
-  List<int>? encryptChunk(List<int> input, String key, List<int> iv) {
-    if (iv.length != 12) {
-      throw ArgumentError('IV must be exactly 12 bytes for AES-GCM');
+  String generateMnemonic() {
+    const bufferSize = 256; // Enough for 12 words + spaces
+    final buffer = calloc<ffi.Char>(bufferSize);
+    
+    try {
+      final result = _bindings.nebula_generate_mnemonic(buffer, bufferSize);
+      if (result != 0) {
+        throw NebulaError(result, 'Failed to generate mnemonic');
+      }
+      return buffer.cast<Utf8>().toDartString();
+    } finally {
+      calloc.free(buffer);
     }
+  }
 
-    // Caller allocates input buffer
-    final inputPtr = calloc<ffi.Uint8>(input.length);
-    // Caller allocates output buffer (input size + 16 bytes for auth tag)
-    final outputPtr = calloc<ffi.Uint8>(input.length + 16);
-    // Caller allocates IV buffer
-    final ivPtr = calloc<ffi.Uint8>(iv.length);
-    // Caller allocates key string
-    final keyPtr = key.toNativeUtf8();
+  Future<int> unlockWithPassword(String password) async {
+    final docsDir = await getNebulaDocumentsDirectory();
+    final dbPath = p.join(docsDir.path, 'nebula.db');
+    final dbPathPtr = dbPath.toNativeUtf8();
+    final passwordPtr = password.toNativeUtf8();
 
     try {
-      // Copy input data
-      for (int i = 0; i < input.length; i++) {
-        inputPtr[i] = input[i];
-      }
-      // Copy IV
-      for (int i = 0; i < iv.length; i++) {
-        ivPtr[i] = iv[i];
-      }
-
-      final resultLen = _bindings.aes_encrypt_chunk(
-        inputPtr,
-        input.length,
-        outputPtr,
-        keyPtr.cast<ffi.Char>(),
-        ivPtr,
+      final result = _bindings.nebula_unlock_with_password(
+        dbPathPtr.cast<ffi.Char>(),
+        passwordPtr.cast<ffi.Char>(),
       );
 
-      if (resultLen < 0) {
-        return null; // Error occurred
+      if (result == 0) {
+        _isInitialized = true;
       }
+      return result;
+    } finally {
+      calloc.free(dbPathPtr);
+      calloc.free(passwordPtr);
+    }
+  }
 
-      // Copy result to Dart list
+  bool validateMnemonic(String mnemonic) {
+    final mnemonicPtr = mnemonic.toNativeUtf8();
+    try {
+      final result = _bindings.nebula_validate_mnemonic(mnemonicPtr.cast<ffi.Char>());
+      return result == 1;
+    } finally {
+      calloc.free(mnemonicPtr);
+    }
+  }
+
+  Future<int> setPassword(String mnemonic, String password) async {
+    final docsDir = await getNebulaDocumentsDirectory();
+    final dbPath = p.join(docsDir.path, 'nebula.db');
+    final dbPathPtr = dbPath.toNativeUtf8();
+    final mnemonicPtr = mnemonic.toNativeUtf8();
+    final passwordPtr = password.toNativeUtf8();
+
+    try {
+      final result = _bindings.nebula_set_password(
+        dbPathPtr.cast<ffi.Char>(),
+        mnemonicPtr.cast<ffi.Char>(),
+        passwordPtr.cast<ffi.Char>(),
+      );
+      if (result == 0) {
+        _isInitialized = true;
+      }
+      return result;
+    } finally {
+      calloc.free(dbPathPtr);
+      calloc.free(mnemonicPtr);
+      calloc.free(passwordPtr);
+    }
+  }
+
+  List<int>? encryptChunk(List<int> input, List<int> key, List<int> iv) {
+    _ensureInitialized();
+    
+    if (iv.length != 12) throw ArgumentError('IV must be exactly 12 bytes');
+    if (key.length != 32) throw ArgumentError('Key must be exactly 32 bytes');
+
+    final inputPtr = calloc<ffi.Uint8>(input.length);
+    final outputPtr = calloc<ffi.Uint8>(input.length + 16);
+    final ivPtr = calloc<ffi.Uint8>(iv.length);
+    final keyPtr = calloc<ffi.Uint8>(key.length);
+
+    try {
+      for (int i = 0; i < input.length; i++) inputPtr[i] = input[i];
+      for (int i = 0; i < iv.length; i++) ivPtr[i] = iv[i];
+      for (int i = 0; i < key.length; i++) keyPtr[i] = key[i];
+
+      final resultLen = _bindings.aes_encrypt_chunk(
+        inputPtr, input.length, outputPtr, keyPtr, key.length, ivPtr,
+      );
+
+      if (resultLen < 0) return null;
+
       return List<int>.generate(resultLen, (i) => outputPtr[i]);
     } finally {
-      // Caller frees all allocations
       calloc.free(inputPtr);
       calloc.free(outputPtr);
       calloc.free(ivPtr);
@@ -153,53 +307,31 @@ class NebulaApi {
     }
   }
 
-  /// Decrypt data chunk with AES-256-GCM
-  ///
-  /// [input] Encrypted data bytes (includes 16-byte authentication tag)
-  /// [key] Base64-encoded encryption key
-  /// [iv] Initialization vector (12 bytes for GCM)
-  ///
-  /// Returns decrypted data, or null on error.
-  List<int>? decryptChunk(List<int> input, String key, List<int> iv) {
-    if (iv.length != 12) {
-      throw ArgumentError('IV must be exactly 12 bytes for AES-GCM');
-    }
-    if (input.length < 16) {
-      throw ArgumentError('Input must include at least 16-byte auth tag');
-    }
+  List<int>? decryptChunk(List<int> input, List<int> key, List<int> iv) {
+    _ensureInitialized();
+    
+    if (iv.length != 12) throw ArgumentError('IV must be exactly 12 bytes');
+    if (key.length != 32) throw ArgumentError('Key must be exactly 32 bytes');
+    if (input.length < 16) throw ArgumentError('Input too short');
 
-    // Caller allocates buffers
     final inputPtr = calloc<ffi.Uint8>(input.length);
     final outputPtr = calloc<ffi.Uint8>(input.length);
     final ivPtr = calloc<ffi.Uint8>(iv.length);
-    final keyPtr = key.toNativeUtf8();
+    final keyPtr = calloc<ffi.Uint8>(key.length);
 
     try {
-      // Copy input data
-      for (int i = 0; i < input.length; i++) {
-        inputPtr[i] = input[i];
-      }
-      // Copy IV
-      for (int i = 0; i < iv.length; i++) {
-        ivPtr[i] = iv[i];
-      }
+      for (int i = 0; i < input.length; i++) inputPtr[i] = input[i];
+      for (int i = 0; i < iv.length; i++) ivPtr[i] = iv[i];
+      for (int i = 0; i < key.length; i++) keyPtr[i] = key[i];
 
       final resultLen = _bindings.aes_decrypt_chunk(
-        inputPtr,
-        input.length,
-        outputPtr,
-        keyPtr.cast<ffi.Char>(),
-        ivPtr,
+        inputPtr, input.length, outputPtr, keyPtr, key.length, ivPtr,
       );
 
-      if (resultLen < 0) {
-        return null; // Error occurred
-      }
+      if (resultLen < 0) return null;
 
-      // Copy result to Dart list
       return List<int>.generate(resultLen, (i) => outputPtr[i]);
     } finally {
-      // Caller frees all allocations
       calloc.free(inputPtr);
       calloc.free(outputPtr);
       calloc.free(ivPtr);

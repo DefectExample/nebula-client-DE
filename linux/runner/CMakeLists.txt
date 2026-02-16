@@ -23,4 +23,7 @@ add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
 
+# Link directly to the stable lib location to avoid linker conflicts with Clang
+target_link_libraries(${BINARY_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../../../nebula_core/linux/libnebula_core.so")
+
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
