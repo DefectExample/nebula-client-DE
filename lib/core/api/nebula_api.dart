@@ -339,38 +339,17 @@ class NebulaApi {
     }
   }
 
-  /// Derive master key using Argon2id
-  ///
-  /// [password] User password
-  /// [salt] 16-byte salt
-  /// [iterations] Argon2 iterations
-  /// [memoryKb] Argon2 memory in KB
-  /// [parallelism] Argon2 parallelism factor
-  /// [outputKey] Pre-allocated 32-byte buffer for the result
-  ///
-  /// Returns 0 on success, error code otherwise.
   int deriveMasterKey(
-    String password,
-    ffi.Pointer<ffi.Uint8> salt,
-    int saltLen,
-    int iterations,
-    int memoryKb,
-    int parallelism,
-    ffi.Pointer<ffi.Uint8> outputKey,
-  ) {
-    final passwordPtr = password.toNativeUtf8();
+      String mnemonic, ffi.Pointer<ffi.Char> outHexBuffer, int bufferLength) {
+    final mnemonicPtr = mnemonic.toNativeUtf8();
     try {
       return _bindings.nebula_derive_master_key(
-        passwordPtr.cast<ffi.Char>(),
-        salt,
-        saltLen,
-        iterations,
-        memoryKb,
-        parallelism,
-        outputKey,
+        mnemonicPtr.cast<ffi.Char>(),
+        outHexBuffer,
+        bufferLength,
       );
     } finally {
-      calloc.free(passwordPtr);
+      calloc.free(mnemonicPtr);
     }
   }
 }

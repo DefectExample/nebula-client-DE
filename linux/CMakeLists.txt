@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 # Since we are building from the client, we need to point vcpkg to the core's manifest
 if(NOT DEFINED VCPKG_MANIFEST_DIR)
     get_filename_component(NEBULA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../nebula_core" ABSOLUTE)
-    if(EXISTS "${NEBULA_CORE_DIR}/vcpkg.json")
+    if(EXISTS "${NEBULA_CORE_DIR}/vcpkg.json" AND NOT DEFINED ENV{IN_NIX_SHELL})
         set(VCPKG_MANIFEST_DIR "${NEBULA_CORE_DIR}")
         message(STATUS "Setting VCPKG_MANIFEST_DIR to ${VCPKG_MANIFEST_DIR}")
     endif()
