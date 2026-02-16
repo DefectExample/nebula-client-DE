@@ -1,13 +1,8 @@
-/// Application environment configuration
 enum AppFlavor {
   dev,
   prod,
 }
 
-/// Configuration for the Nebula application
-/// 
-/// This class holds environment-specific settings that vary between
-/// development and production builds.
 class AppConfig {
   final String appName;
   final String apiBaseUrl;
@@ -21,7 +16,6 @@ class AppConfig {
     required this.enableLogging,
   });
 
-  /// Development configuration
   factory AppConfig.dev() => const AppConfig(
         appName: 'Nebula (Dev)',
         apiBaseUrl: 'https://dev-api.nebula.example.com',
@@ -29,7 +23,6 @@ class AppConfig {
         enableLogging: true,
       );
 
-  /// Production configuration
   factory AppConfig.prod() => const AppConfig(
         appName: 'Nebula',
         apiBaseUrl: 'https://api.nebula.example.com',

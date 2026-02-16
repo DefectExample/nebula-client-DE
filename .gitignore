@@ -40,6 +40,7 @@ profile
 
 # Linux
 /linux/flutter/ephemeral/
+/linux/libnebula_core.so
 
 # macOS
 /macos/Flutter/ephemeral/
@@ -49,6 +50,17 @@ profile
 
 # Web
 /web/
+
+# Native Libs
+android/app/jniLibs/
+ios/Runner/libnebula_core.a
+
+# Databases & Environment
+*.db
+*.db.meta
+*.sqlite
+*.env
+.env.*
 
 # IDE
 .vscode/

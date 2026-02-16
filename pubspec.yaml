@@ -12,10 +12,11 @@ dependencies:
   ffi: ^2.1.3
   flutter_riverpod: ^2.5.1
   go_router: ^14.0.0
+  path_provider: ^2.1.1
+  path: ^1.9.0
+  window_manager: ^0.3.7
   nebula_core:
-    git:
-      url: git@github.com:kaabdulaal/nebula-core.git
-      ref: feature/CORE-02-ffi-bridge
+    path: ../nebula_core
 
 dev_dependencies:
   flutter_test:
