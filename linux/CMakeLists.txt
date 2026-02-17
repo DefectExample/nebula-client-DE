@@ -1,4 +1,5 @@
 # Project-level configuration.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 cmake_minimum_required(VERSION 3.13)
 
 # Since we are building from the client, we need to point vcpkg to the core's manifest
@@ -164,6 +165,25 @@ if(EXISTS "${NEBULA_STABLE_LIB_PATH}")
     DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
   message(STATUS "Loaded nebula_core from stable path: ${NEBULA_STABLE_LIB_PATH}")
+
+  # Bundle dependencies from the same directory (e.g. vcpkg or nix-built libs)
+  get_filename_component(NEBULA_CORE_LIB_DIR "${NEBULA_STABLE_LIB_PATH}" DIRECTORY)
+  
+  # Also check the build output directory in case they aren't synced to stable yet
+  get_filename_component(NEBULA_CORE_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../nebula_core/build/lib" ABSOLUTE)
+
+  file(GLOB CORE_DEPENDENCIES
+    "${NEBULA_CORE_LIB_DIR}/libjsoncpp.so*"
+    "${NEBULA_CORE_LIB_DIR}/libsqlcipher.so*"
+    "${NEBULA_CORE_BUILD_DIR}/libjsoncpp.so*"
+    "${NEBULA_CORE_BUILD_DIR}/libsqlcipher.so*"
+  )
+  if(CORE_DEPENDENCIES)
+    install(FILES ${CORE_DEPENDENCIES}
+      DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+      COMPONENT Runtime)
+    message(STATUS "Bundled core dependencies: ${CORE_DEPENDENCIES}")
+  endif()
 else()
   message(WARNING "nebula_core library not found at: ${NEBULA_STABLE_LIB_PATH}")
   message(WARNING "Building the core is required before building the client.")
