@@ -9,7 +9,6 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart'; 
-
 import 'app/router.dart';
 import 'core/auth/auth_provider.dart';
 import 'core/auth/auth_state.dart';
@@ -56,7 +55,6 @@ class NebulaApp extends ConsumerWidget {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
   if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
     try {
       await Firebase.initializeApp(
@@ -97,15 +95,12 @@ Future<void> main() async {
 
   if (!kIsWeb && Platform.isAndroid) {
   }
-
-
   runApp(
     const ProviderScope(
       child: NebulaApp(),
     ),
   );
 }
-
 @pragma('vm:entry-point')
 void startCallback() {
   FlutterForegroundTask.setTaskHandler(SyncTaskHandler());

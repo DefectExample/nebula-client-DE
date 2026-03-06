@@ -135,6 +135,7 @@ class _RestoreWalletScreenState extends ConsumerState<RestoreWalletScreen> {
       return RestorationGuardResult.error;
     }
   }
+
   Future<bool> _showGuardDialog(
       {required String title, required String message}) async {
     if (!mounted) return false;
@@ -192,8 +193,7 @@ class _RestoreWalletScreenState extends ConsumerState<RestoreWalletScreen> {
 
     if (proceed == true && mounted) {
       setState(() => _isLoading = true);
-      await ref.read(authProvider.notifier).destroyAccount();
-      if (mounted) context.go('/onboarding');
+      await ref.read(authProvider.notifier).nukeVaultAndStartOver();
     }
   }
 

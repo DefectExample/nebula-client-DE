@@ -154,7 +154,6 @@ class SecretStore {
       debugPrint('SecretStore: Failed to clear mnemonic: $e');
     }
   }
-
   static bool? _cachedKeyringHealth;
 
   static Future<bool> isKeyringHealthy() async {

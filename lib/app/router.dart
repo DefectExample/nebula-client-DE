@@ -33,7 +33,9 @@ class HomeScreen extends StatelessWidget {
 class _AuthNotifierListenable extends ChangeNotifier {
   _AuthNotifierListenable(this._ref) {
     _ref.listen(authProvider, (previous, next) {
-      if (previous?.status != next.status) {
+      if (previous?.status != next.status ||
+          previous?.sessionTimestamp != next.sessionTimestamp ||
+          previous?.hasCloudMetadata != next.hasCloudMetadata) {
         notifyListeners();
       }
     });
@@ -104,6 +106,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/cloud-unlock';
         } else {
           if (location == '/restore-wallet') return null;
+          debugPrint('[Router] Rule 4: No Cloud. Redirecting to /restore-wallet');
           return '/restore-wallet';
         }
       }
@@ -165,6 +168,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isCoreOpen ? '/home' : '/lock';
       }
   
+      if (auth.status == AuthStateStatus.error) {
+        const errorAllowed = ['/onboarding', '/api_settings', '/cartridge_setup'];
+        if (errorAllowed.contains(location)) return null;
+        debugPrint('[Router] ERROR state detected: ${auth.errorMessage}. Redirecting to /onboarding');
+        return '/onboarding';
+      }
+
       if (auth.status == AuthStateStatus.initial) {
         if (location == '/') {
           debugPrint('[Router] Rule 0: Fresh Start. Forwarding from Splash to /onboarding');
@@ -239,6 +249,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LockScreen(),
       ),
       GoRoute(
+
         path: '/seed_intro',
         builder: (context, state) => const SeedScreen(),
       ),

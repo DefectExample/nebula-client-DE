@@ -10,7 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import '../api/nebula_api.dart';
 import '../models/file_node.dart';
 import '../../features/transfers/download_orchestrator.dart';
-import 'telegram_service.dart';
+
 import 'vault_anchor_service.dart';
 import '../utils/crypto_utils.dart';
 import '../security/security_manager.dart';
@@ -105,6 +105,19 @@ class SyncEngine extends ChangeNotifier {
   void resume() {
     _log('[SYNC] Engine RESUMED');
     _isPaused = false;
+  }
+
+  /// Completely clears the SyncEngine state from RAM (used during Vault Reset).
+  void reset() {
+    pause();
+    _lastGhostPurgeTimes.clear();
+    _ghostQueue.clear();
+    _ghostTimer?.cancel();
+    _ghostTimer = null;
+    _lastSeenSnapshotMsgId = null;
+    _updateSub?.cancel();
+    _updateSub = null;
+    _log('[SYNC] RAM caches and timers completely cleared (Reset).');
   }
 
   void setMasterKey(Uint8List key) {
@@ -311,6 +324,7 @@ class SyncEngine extends ChangeNotifier {
     String? focusFolderId,
     int? forcedChatId,
     bool silent = false,
+    bool ignoreThreats = false,
   }) async {
     if (_isSyncing) return;
     _isSyncing = true;
@@ -324,8 +338,8 @@ class SyncEngine extends ChangeNotifier {
 
       final chatId = forcedChatId ?? await _anchor.findNebulaChannel();
       if (chatId == null) {
-        _log('[SYNC] ERROR: Vault channel not found. Mandatory sync failure.');
-        throw Exception('Chat not found');
+        _log('[SYNC] Warning: Vault channel not found. This is normal on fresh Linux installs. Skipping pull.');
+        return;
       }
 
       final snapshotMessage = await _findLatestSnapshot(chatId);
@@ -524,11 +538,15 @@ class SyncEngine extends ChangeNotifier {
           errorStr.contains('vfs decryption') ||
           errorStr.contains('chat not found')) {
         _log('[THREAT] Sync integrity failure detected: $e');
-        _log('[THREAT] Forcing session invalidation.');
-        SecurityManager().clearKeys();
-        onSyncThreat?.call(
-          'Security Handshake Failed: The cloud vault is inaccessible or corrupted. Please verify your credentials.',
-        );
+        if (!ignoreThreats) {
+          _log('[THREAT] Forcing session invalidation.');
+          SecurityManager().clearKeys();
+          onSyncThreat?.call(
+            'Session invalidated due to sync mismatch or missing cloud vault. Please re-enter credentials.',
+          );
+        } else {
+          _log('[THREAT] Threat suppressed (Discovery/Fresh Install).');
+        }
       }
       rethrow;
     } finally {

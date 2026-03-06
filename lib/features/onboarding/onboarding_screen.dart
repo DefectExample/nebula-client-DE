@@ -39,6 +39,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       final repo = CredentialsRepository();
 
+
       if (_isCustom) {
         final apiId = int.tryParse(_apiIdController.text);
         final apiHash = _apiHashController.text.trim();

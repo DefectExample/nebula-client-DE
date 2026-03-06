@@ -64,12 +64,25 @@ class TelegramService {
   Future<void> init({required int apiId, required String apiHash, required String dbPath}) async {
     if (_initialized) return;
 
+    // 1. ФИКС ДЛЯ WINDOWS: Нормализуем слэши в путях
+    final cleanDbPath = dbPath.replaceAll('\\', '/');
+
+    // 2. ФИКС ДОСТУПА: Принудительно создаем папку, если её нет
+    try {
+      final dir = Directory(cleanDbPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+    } catch (e) {
+      _log('WARNING: Failed to create DB directory: $e');
+    }
+
     _apiId = apiId;
     _apiHash = apiHash;
-    _dbPath = dbPath;
+    _dbPath = cleanDbPath; // Сохраняем уже очищенный путь
 
     try {
-      _log('Initializing with API_ID: $apiId');
+      _log('Initializing with API_ID: $apiId, DB_PATH: $_dbPath');
       
       await _updatesSubscription?.cancel();
       _updatesPort?.close();
@@ -743,10 +756,15 @@ class TelegramService {
   }
 
   void dispose() {
-    if (!_initialized) return;
     _log('Disposing Telegram service (Graceful Shutdown)...');
 
-    send({'@type': 'close'});
+    // Only send 'close' if Dart side is still initialized — avoids sending
+    // commands to a dead client. But ALWAYS call stopTelegram() below to
+    // guarantee the C++ worker thread is joined and the TDLib client pointer
+    // is destroyed/recreated regardless of _initialized state.
+    if (_initialized) {
+      send({'@type': 'close'});
+    }
     
     _ffi.stopTelegram();
     

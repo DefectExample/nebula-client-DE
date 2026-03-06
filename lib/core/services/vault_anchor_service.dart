@@ -787,6 +787,10 @@ class VaultAnchorService {
   }
 
   Future<void> clearLocalAnchor() async {
+    _log('Clearing local anchor state (RAM and Disk)...');
+    _activeChannelId = null;
+    _discoveryFuture = null;
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('vault_epoch');
     await prefs.remove('vault_identity_hash');
